@@ -1,0 +1,9 @@
+[package]
+name = "consistent"
+description = "Consistent hash package for Rust"
+version = "0.1.0"
+authors = ["David Cai <davidcai1993@yahoo.com>"]
+
+[dependencies]
+crc = "1.4.0"
+chashmap = "2.2.0"
