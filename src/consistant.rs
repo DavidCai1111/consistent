@@ -36,6 +36,10 @@ impl Consistant {
         &self.members
     }
 
+    pub fn count(&self) -> usize {
+        self.members.len()
+    }
+
     pub fn add<S: Into<String>>(&mut self, element: S) {
         let s = element.into();
 
@@ -78,7 +82,6 @@ impl Consistant {
         element + &i.to_string()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
