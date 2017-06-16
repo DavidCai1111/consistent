@@ -1,5 +1,5 @@
 [package]
-name = "consistent"
+name = "consistent-rs"
 description = "Consistent hash package for Rust"
 version = "0.1.0"
 authors = ["David Cai <davidcai1993@yahoo.com>"]

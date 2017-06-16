@@ -2,6 +2,7 @@ use std::default::Default;
 use std::rc::Rc;
 use std::iter::Iterator;
 use std::collections::hash_map::HashMap;
+use std::sync::RwLock;
 use crc::crc32::checksum_ieee;
 
 #[derive(Debug)]
@@ -11,6 +12,7 @@ pub struct Consistant {
     circle: HashMap<u32, Rc<String>>,
     members: HashMap<Rc<String>, ()>,
     sorted_keys: Vec<u32>,
+    lock: RwLock<()>,
 }
 
 impl Default for Consistant {
@@ -20,6 +22,7 @@ impl Default for Consistant {
             circle: HashMap::new(),
             members: HashMap::new(),
             sorted_keys: Vec::new(),
+            lock: RwLock::new(()),
         }
     }
 }
@@ -31,14 +34,17 @@ impl Consistant {
             circle: HashMap::new(),
             members: HashMap::new(),
             sorted_keys: Vec::new(),
+            lock: RwLock::new(()),
         }
     }
 
     pub fn count(&self) -> usize {
+        let _ = self.lock.read().expect("rLock");
         self.members.len()
     }
 
     pub fn add<S: Into<String>>(&mut self, element: S) {
+        let _ = self.lock.write().expect("wLock");
         let s = &Rc::new(element.into());
         if self.contains(s) {
             return;
@@ -55,6 +61,7 @@ impl Consistant {
     }
 
     pub fn get<S: Into<String>>(&self, name: S) -> Option<String> {
+        let _ = self.lock.read().expect("rLock");
         if self.circle.len() == 0 {
             return None;
         }
@@ -67,6 +74,7 @@ impl Consistant {
     }
 
     pub fn remove<S: Into<String>>(&mut self, name: S) {
+        let _ = self.lock.write().expect("wLock");
         let s = &Rc::new(name.into());
         if !self.contains(s) {
             return;
