@@ -48,9 +48,9 @@ impl Consistant {
             self.circle.insert(sum, s.clone());
 
             self.sorted_keys.push(sum);
-            self.sorted_keys.sort();
         }
 
+        self.sorted_keys.sort();
         self.members.push(s);
     }
 
