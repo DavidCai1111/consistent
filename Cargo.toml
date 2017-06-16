@@ -6,4 +6,3 @@ authors = ["David Cai <davidcai1993@yahoo.com>"]
 
 [dependencies]
 crc = "1.4.0"
-chashmap = "2.2.0"

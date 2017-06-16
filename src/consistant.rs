@@ -1,25 +1,25 @@
 use std::default::Default;
 use std::rc::Rc;
 use std::iter::Iterator;
-use chashmap::CHashMap;
+use std::collections::hash_map::HashMap;
 use crc::crc32::checksum_ieee;
 
 #[derive(Debug)]
 pub struct Consistant {
     pub replicas_num: usize,
 
-    circle: CHashMap<u32, Rc<String>>,
+    circle: HashMap<u32, Rc<String>>,
+    members: HashMap<Rc<String>, ()>,
     sorted_keys: Vec<u32>,
-    members: Vec<Rc<String>>,
 }
 
 impl Default for Consistant {
     fn default() -> Consistant {
         Consistant {
             replicas_num: 20,
-            circle: CHashMap::new(),
+            circle: HashMap::new(),
+            members: HashMap::new(),
             sorted_keys: Vec::new(),
-            members: Vec::new(),
         }
     }
 }
@@ -28,9 +28,9 @@ impl Consistant {
     pub fn new(replicas_num: usize) -> Self {
         Consistant {
             replicas_num: replicas_num,
-            circle: CHashMap::new(),
+            circle: HashMap::new(),
+            members: HashMap::new(),
             sorted_keys: Vec::new(),
-            members: Vec::new(),
         }
     }
 
@@ -38,63 +38,56 @@ impl Consistant {
         self.members.len()
     }
 
-    pub fn add<S: Into<String>>(&mut self, element: S) -> Option<()> {
-        let s = Rc::new(element.into());
-        if self.contains(&s) {
-            return None;
+    pub fn add<S: Into<String>>(&mut self, element: S) {
+        let s = &Rc::new(element.into());
+        if self.contains(s) {
+            return;
         }
 
         for i in 0..self.replicas_num {
-            let sum = checksum_ieee(Self::generate_element_name(&s, i).as_bytes());
+            let sum = checksum_ieee(Self::generate_element_name(s, i).as_bytes());
             self.circle.insert(sum, s.clone());
             self.sorted_keys.push(sum)
         }
 
-        self.members.push(s.clone());
+        self.members.insert(s.clone(), ());
         self.sorted_keys.sort();
-        Some(())
     }
 
-    pub fn get<S: Into<String>>(&self, name: S) -> Option<Rc<String>> {
+    pub fn get<S: Into<String>>(&self, name: S) -> Option<String> {
         if self.circle.len() == 0 {
             return None;
         }
         let key = self.get_key(checksum_ieee(name.into().as_bytes()));
 
         match self.circle.get(&key) {
-            Some(guard) => Some((*guard).clone()),
+            Some(rc) => Some((**rc).clone()),
             None => unreachable!(),
         }
     }
 
-    pub fn remove<S: Into<String>>(&mut self, name: S) -> Option<()> {
-        let s = Rc::new(name.into());
-        if !self.contains(&s) {
-            return None;
+    pub fn remove<S: Into<String>>(&mut self, name: S) {
+        let s = &Rc::new(name.into());
+        if !self.contains(s) {
+            return;
         }
 
         for i in 0..self.replicas_num {
-            let sum = checksum_ieee(Self::generate_element_name(&s, i).as_bytes());
-            self.circle.remove(&sum);
+            let sum = &checksum_ieee(Self::generate_element_name(s, i).as_bytes());
+            self.circle.remove(sum);
 
-            match self.sorted_keys.iter().position(|key| key.eq(&sum)) {
+            match self.sorted_keys.iter().position(|key| key.eq(sum)) {
                 Some(index) => self.sorted_keys.remove(index),
                 None => unreachable!(),
             };
         }
 
-        match self.members.iter().position(|member| member.eq(&s)) {
-            Some(index) => self.members.remove(index),
-            None => unreachable!(),
-        };
-
-        Some(())
+        self.members.remove(s);
     }
 
     #[inline]
-    fn contains(&self, name: &str) -> bool {
-        let name = &Rc::new(name.into());
-        self.members.iter().find(|&e| e.eq(name)).is_some()
+    fn contains(&self, name: &Rc<String>) -> bool {
+        self.members.contains_key(name)
     }
 
     #[inline]
@@ -161,9 +154,9 @@ mod tests {
         let mut consistant = Consistant::default();
         consistant.add("cacheA");
 
-        assert_eq!(consistant.contains("cacheA"), true);
-        assert_eq!(consistant.contains("cacheB"), false);
-        assert_eq!(consistant.contains("CachEa"), false);
+        assert_eq!(consistant.contains(&Rc::new(String::from("cacheA"))), true);
+        assert_eq!(consistant.contains(&Rc::new(String::from("cacheB"))), false);
+        assert_eq!(consistant.contains(&Rc::new(String::from("CachEa"))), false);
     }
 
     #[test]
@@ -191,18 +184,9 @@ mod tests {
         consistant.remove("cacheC");
         assert_eq!(consistant.count(), 2);
 
-        assert!(!consistant
-                    .get("david")
-                    .unwrap()
-                    .eq(&Rc::new(String::from("cacheC"))));
-        assert!(!consistant
-                    .get("kally")
-                    .unwrap()
-                    .eq(&Rc::new(String::from("cacheC"))));
-        assert!(!consistant
-                    .get("jason")
-                    .unwrap()
-                    .eq(&Rc::new(String::from("cacheC"))));
+        assert!(consistant.get("david").unwrap() != String::from("cacheC"));
+        assert!(consistant.get("kally").unwrap() != String::from("cacheC"));
+        assert!(consistant.get("jason").unwrap() != String::from("cacheC"));
     }
 }
 
