@@ -5,6 +5,7 @@ use std::collections::hash_map::HashMap;
 use std::sync::RwLock;
 use crc::crc32::checksum_ieee;
 
+/// Consistant holds the information of the hash ring.
 #[derive(Debug)]
 pub struct Consistant {
     pub replicas_num: usize,
@@ -28,6 +29,7 @@ impl Default for Consistant {
 }
 
 impl Consistant {
+    /// Crete a new instance of Consistant.
     pub fn new(replicas_num: usize) -> Self {
         Consistant {
             replicas_num: replicas_num,
@@ -38,11 +40,13 @@ impl Consistant {
         }
     }
 
+    /// Get the count of added elements.
     pub fn count(&self) -> usize {
         let _ = self.lock.read().expect("rLock");
         self.members.len()
     }
 
+    /// Add an elment to the hash ring.
     pub fn add<S: Into<String>>(&mut self, element: S) {
         let _ = self.lock.write().expect("wLock");
         let s = &Rc::new(element.into());
@@ -60,6 +64,7 @@ impl Consistant {
         self.sorted_keys.sort();
     }
 
+    /// Get the cloeset element's name to the given "name".
     pub fn get<S: Into<String>>(&self, name: S) -> Option<String> {
         let _ = self.lock.read().expect("rLock");
         if self.circle.len() == 0 {
@@ -70,6 +75,7 @@ impl Consistant {
         Some(self.get_i_from_circle(key))
     }
 
+    /// Get the N cloeset elements' names to the given "name".
     pub fn get_n<S: Into<String>>(&self, name: S, n: usize) -> Option<Vec<String>> {
         let _ = self.lock.read().expect("rLock");
         if n == 0 || self.circle.len() == 0 {
@@ -100,6 +106,7 @@ impl Consistant {
         Some(res)
     }
 
+    /// Remove the given element.
     pub fn remove<S: Into<String>>(&mut self, name: S) {
         let _ = self.lock.write().expect("wLock");
         let s = &Rc::new(name.into());
@@ -120,6 +127,7 @@ impl Consistant {
         self.members.remove(s);
     }
 
+    #[inline]
     fn get_i_from_circle(&self, i: u32) -> String {
         match self.circle.get(&i) {
             Some(rc) => (**rc).clone(),

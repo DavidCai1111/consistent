@@ -2,7 +2,14 @@
 name = "consistent-rs"
 description = "Consistent hash package for Rust"
 version = "0.1.0"
+documentation = "https://docs.rs/consistent_rs/0.1.0/consistent_rs"
+homepage = "https://github.com/DavidCai1993/consistent"
 authors = ["David Cai <davidcai1993@yahoo.com>"]
+readme = "README.md"
+repository = "https://github.com/DavidCai1993/consistent"
+keywords = ["consistent", "hash-ring"]
+categories = ["algorithms"]
+license = "MIT"
 
 [dependencies]
 crc = "1.4.0"

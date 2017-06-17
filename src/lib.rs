@@ -1,3 +1,5 @@
+//! Consistent hash package for Rust.
+
 extern crate crc;
 
 mod consistant;
