@@ -16,7 +16,7 @@ See: https://docs.rs/consistent_rs/0.1.0/consistent_rs
 
 ### Example
 
-```rs
+```rust
 let mut consistant = Consistant::default();
 consistant.add("cacheA");
 consistant.add("cacheB");
