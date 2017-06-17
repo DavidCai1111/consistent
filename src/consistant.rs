@@ -65,12 +65,39 @@ impl Consistant {
         if self.circle.len() == 0 {
             return None;
         }
-        let key = self.get_key(checksum_ieee(name.into().as_bytes()));
+        let key = self.sorted_keys[self.get_key_index(checksum_ieee(name.into().as_bytes()))];
 
-        match self.circle.get(&key) {
-            Some(rc) => Some((**rc).clone()),
-            None => unreachable!(),
+        Some(self.get_i_from_circle(key))
+    }
+
+    pub fn get_n<S: Into<String>>(&self, name: S, n: usize) -> Option<Vec<String>> {
+        let _ = self.lock.read().expect("rLock");
+        if n == 0 || self.circle.len() == 0 {
+            return None;
         }
+        let count = if self.count() > n { n } else { self.count() };
+        let mut start = self.get_key_index(checksum_ieee(name.into().as_bytes()));
+        let mut element = self.get_i_from_circle(self.sorted_keys[start]);
+
+        let mut res = Vec::with_capacity(count);
+        res.push(element);
+
+        loop {
+            start = start + 1;
+            if start >= self.sorted_keys.len() {
+                start = 0;
+            }
+            element = self.get_i_from_circle(self.sorted_keys[start]);
+            if !res.contains(&element) {
+                res.push(element)
+            }
+
+            if res.len() == count {
+                break;
+            }
+        }
+
+        Some(res)
     }
 
     pub fn remove<S: Into<String>>(&mut self, name: S) {
@@ -93,20 +120,29 @@ impl Consistant {
         self.members.remove(s);
     }
 
+    fn get_i_from_circle(&self, i: u32) -> String {
+        match self.circle.get(&i) {
+            Some(rc) => (**rc).clone(),
+            None => unreachable!(),
+        }
+    }
+
     #[inline]
     fn contains(&self, name: &Rc<String>) -> bool {
         self.members.contains_key(name)
     }
 
     #[inline]
-    fn get_key(&self, sum: u32) -> u32 {
-        for key in &self.sorted_keys {
+    fn get_key_index(&self, sum: u32) -> usize {
+        let iter = (&self.sorted_keys).into_iter();
+
+        for (i, key) in iter.enumerate() {
             if sum < *key {
-                return *key;
+                return i;
             }
         }
 
-        self.sorted_keys[0]
+        0
     }
 
     #[inline]
@@ -180,6 +216,22 @@ mod tests {
                    consistant.get("kally").unwrap());
         assert_eq!(consistant.get("jason").unwrap(),
                    consistant.get("jason").unwrap());
+    }
+
+    #[test]
+    fn test_get_n() {
+        let mut consistant = Consistant::default();
+        consistant.add("cacheA");
+        consistant.add("cacheB");
+        consistant.add("cacheC");
+
+        let res = consistant.get_n("david", 3).unwrap();
+        assert_eq!(res.len(), 3);
+
+        consistant.remove("cacheA");
+
+        let res2 = consistant.get_n("david", 3).unwrap();
+        assert_eq!(res2.len(), 2);
     }
 
     #[test]
