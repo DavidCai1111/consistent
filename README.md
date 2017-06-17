@@ -7,12 +7,12 @@ Consistent hash package for Rust.
 
 ```toml
 [dependencies]
-consistent_rs = "0.1.0"
+consistent_rs = "0.1.1"
 ```
 
 ### Documentation
 
-See: https://docs.rs/consistent_rs/0.1.0/consistent_rs
+See: https://docs.rs/consistent-rs/0.1.1/consistent_rs/
 
 ### Example
 
